@@ -1,6 +1,5 @@
 -- ========================================================
 -- Touch Fling Script for Roblox (Delta Executor Mobile)
--- Author: Root_Coders / Delta Community
 -- Target Platform: Mobile (Android / iOS)
 -- ========================================================
 
@@ -52,7 +51,7 @@ ToggleButton.MouseButton1Click:Connect(function()
 end)
 
 -- --------------------------------------------------------
--- Fling Physics Loop
+-- Fling Physics Loop (Updated Assembly Velocity)
 -- --------------------------------------------------------
 RunService.Heartbeat:Connect(function()
     if not FlingEnabled then return end
@@ -61,14 +60,13 @@ RunService.Heartbeat:Connect(function()
     local root = character and character:FindFirstChild("HumanoidRootPart")
     
     if root then
-        local currentVelocity = root.Velocity
+        local oldVel = root.AssemblyLinearVelocity
         
-        -- Вызов вращательного импульса для отбрасывания других игроков
-        root.RotVelocity = Vector3.new(0, 999999, 0)
-        root.Velocity = Vector3.new(currentVelocity.X, 9999, currentVelocity.Z)
+        -- Используем актуальные методы физического разгона Roblox
+        root.AssemblyAngularVelocity = Vector3.new(0, 999999, 0)
+        root.AssemblyLinearVelocity = Vector3.new(oldVel.X, 9999, oldVel.Z)
         
-        -- Сброс вектора в следующем кадре для стабильности персонажа
         RunService.RenderStepped:Wait()
-        root.Velocity = currentVelocity
+        root.AssemblyLinearVelocity = oldVel
     end
 end)

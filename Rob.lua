@@ -1,7 +1,7 @@
 -- ========================================================
--- Touch Fling Script for Roblox (Delta Executor Mobile)
+-- Touch Fling Script (Anti-Self-Fling Fixed)
 -- Author: robertbockarev76-ops
--- Repository: https://github.com/robertbockarev76-ops/Test
+-- Target Platform: Mobile (Delta Executor)
 -- ========================================================
 
 local Players = game:GetService("Players")
@@ -11,14 +11,12 @@ local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local FlingEnabled = false
 
--- Удаляем старое GUI, если скрипт перезапускают
+-- Удаляем старое GUI
 if CoreGui:FindFirstChild("DeltaTouchFling_Mobile") then
     CoreGui.DeltaTouchFling_Mobile:Destroy()
 end
 
--- --------------------------------------------------------
--- Mobile GUI Setup
--- --------------------------------------------------------
+-- GUI Setup
 local ScreenGui = Instance.new("ScreenGui")
 local ToggleButton = Instance.new("TextButton")
 local UICorner = Instance.new("UICorner")
@@ -42,9 +40,7 @@ ToggleButton.Draggable = true
 UICorner.CornerRadius = UDim.new(0, 8)
 UICorner.Parent = ToggleButton
 
--- --------------------------------------------------------
--- Toggle Event
--- --------------------------------------------------------
+-- Toggle Logic
 ToggleButton.MouseButton1Click:Connect(function()
     FlingEnabled = not FlingEnabled
     if FlingEnabled then
@@ -56,24 +52,34 @@ ToggleButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- --------------------------------------------------------
--- Fling Physics Loop
--- --------------------------------------------------------
-RunService.Heartbeat:Connect(function()
+-- Fixed Physics Loop
+RunService.Stepped:Connect(function()
     if not FlingEnabled then return end
     
     local character = LocalPlayer.Character
     if not character then return end
     
-    local root = character:FindFirstChild("HumanoidRootPart")
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    -- Выключаем коллизию своего тела, чтобы не отталкиваться от других
+    for _, part in ipairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+        end
+    end
+end)
+
+RunService.Heartbeat:Connect(function()
+    if not FlingEnabled then return end
+    
+    local character = LocalPlayer.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
     
     if root and humanoid and humanoid.Health > 0 then
         local oldVel = root.AssemblyLinearVelocity
         
-        -- Максимальный разгон физики для отбрасывания игроков
-        root.AssemblyAngularVelocity = Vector3.new(0, 999999, 0)
-        root.AssemblyLinearVelocity = Vector3.new(oldVel.X, 9999, oldVel.Z)
+        -- Импульс идет наружу, а твой персонаж удерживает позицию
+        root.AssemblyAngularVelocity = Vector3.new(0, 9999999, 0)
+        root.AssemblyLinearVelocity = Vector3.new(0, 9999999, 0)
         
         RunService.RenderStepped:Wait()
         root.AssemblyLinearVelocity = oldVel

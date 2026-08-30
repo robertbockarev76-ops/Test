@@ -1,7 +1,7 @@
 -- ========================================================
--- Advanced Name ESP for Roblox (Delta Executor Mobile)
+-- Full Chams Body Highlight + Name ESP for Roblox
 -- Author: robertbockarev76-ops
--- Platform: Mobile (Android / iOS)
+-- Target Platform: Mobile (Delta Executor)
 -- ========================================================
 
 local Players = game:GetService("Players")
@@ -10,27 +10,41 @@ local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 
--- Удаление старого интерфейса при перезапуске
-if CoreGui:FindFirstChild("RobloxNameESP") then
-    CoreGui.RobloxNameESP:Destroy()
+-- Очистка старых объектов при перезапуске
+if CoreGui:FindFirstChild("RobloxFullESP") then
+    CoreGui.RobloxFullESP:Destroy()
 end
 
 local ESPFolder = Instance.new("Folder")
-ESPFolder.Name = "RobloxNameESP"
+ESPFolder.Name = "RobloxFullESP"
 ESPFolder.Parent = CoreGui
 
 local function createESP(player)
     if player == LocalPlayer then return end
     
-    local function applyTag(character)
+    local function applyESP(character)
         local head = character:WaitForChild("Head", 5)
         if not head then return end
         
+        -- 1. Подсветка всего тела (Highlight)
+        local highlight = character:FindFirstChild("ESPHighlight")
+        if not highlight then
+            highlight = Instance.new("Highlight")
+            highlight.Name = "ESPHighlight"
+            highlight.Adornee = character
+            highlight.FillColor = Color3.fromRGB(0, 255, 127) -- Цвет заливки тела (зеленый)
+            highlight.FillTransparency = 0.5 -- Прозрачность заливки
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255) -- Белый контур
+            highlight.OutlineTransparency = 0
+            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- Видно сквозь стены
+            highlight.Parent = character
+        end
+        
+        -- 2. Табличка с никнеймом над головой
         if head:FindFirstChild("PlayerESP_Tag") then
             head.PlayerESP_Tag:Destroy()
         end
         
-        -- Создание плавающей плашки сквозь стены
         local billboard = Instance.new("BillboardGui")
         billboard.Name = "PlayerESP_Tag"
         billboard.Adornee = head
@@ -43,13 +57,13 @@ local function createESP(player)
         label.Parent = billboard
         label.Size = UDim2.new(1, 0, 1, 0)
         label.BackgroundTransparency = 1
-        label.TextColor3 = Color3.fromRGB(0, 255, 127) -- Неоново-зеленый
+        label.TextColor3 = Color3.fromRGB(0, 255, 127)
         label.TextSize = 14
         label.Font = Enum.Font.SourceSansBold
-        label.TextStrokeTransparency = 0 -- Черная обводка
+        label.TextStrokeTransparency = 0
         label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         
-        -- Обновление расстояния в реальном времени
+        -- Дистанция в реальном времени
         local connection
         connection = RunService.RenderStepped:Connect(function()
             if not character or not character:Parent() or not head:Parent() then
@@ -72,14 +86,14 @@ local function createESP(player)
     
     if player.Character then
         task.spawn(function()
-            applyTag(player.Character)
+            applyESP(player.Character)
         end)
     end
     
-    player.CharacterAdded:Connect(applyTag)
+    player.CharacterAdded:Connect(applyESP)
 end
 
--- Подключение игроков
+-- Инициализация
 for _, player in ipairs(Players:GetPlayers()) do
     createESP(player)
 end

@@ -1,7 +1,7 @@
 -- ========================================================
--- Touch Fling Script (Anti-Self-Fling Fixed)
+-- Advanced Touch Fling (Zero Self-Knockback Version)
 -- Author: robertbockarev76-ops
--- Target Platform: Mobile (Delta Executor)
+-- Platform: Mobile (Delta Executor)
 -- ========================================================
 
 local Players = game:GetService("Players")
@@ -11,12 +11,14 @@ local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local FlingEnabled = false
 
--- Удаляем старое GUI
+-- Защита от дублирования интерфейса
 if CoreGui:FindFirstChild("DeltaTouchFling_Mobile") then
     CoreGui.DeltaTouchFling_Mobile:Destroy()
 end
 
+-- --------------------------------------------------------
 -- GUI Setup
+-- --------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
 local ToggleButton = Instance.new("TextButton")
 local UICorner = Instance.new("UICorner")
@@ -40,7 +42,7 @@ ToggleButton.Draggable = true
 UICorner.CornerRadius = UDim.new(0, 8)
 UICorner.Parent = ToggleButton
 
--- Toggle Logic
+-- Переключение состояния
 ToggleButton.MouseButton1Click:Connect(function()
     FlingEnabled = not FlingEnabled
     if FlingEnabled then
@@ -52,17 +54,19 @@ ToggleButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Fixed Physics Loop
+-- --------------------------------------------------------
+-- Physics Core (Anti-Self-Fling + Desync)
+-- --------------------------------------------------------
 RunService.Stepped:Connect(function()
     if not FlingEnabled then return end
     
     local character = LocalPlayer.Character
-    if not character then return end
-    
-    -- Выключаем коллизию своего тела, чтобы не отталкиваться от других
-    for _, part in ipairs(character:GetChildren()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = false
+    if character then
+        -- Полный Noclip своего персонажа, чтобы не получать отдачу
+        for _, part in ipairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
         end
     end
 end)
@@ -75,13 +79,16 @@ RunService.Heartbeat:Connect(function()
     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
     
     if root and humanoid and humanoid.Health > 0 then
-        local oldVel = root.AssemblyLinearVelocity
+        local originalVelocity = root.AssemblyLinearVelocity
         
-        -- Импульс идет наружу, а твой персонаж удерживает позицию
-        root.AssemblyAngularVelocity = Vector3.new(0, 9999999, 0)
-        root.AssemblyLinearVelocity = Vector3.new(0, 9999999, 0)
+        -- Безумное вращение для выталкивания чужих персонажей
+        root.AssemblyAngularVelocity = Vector3.new(0, 10000000, 0)
+        
+        -- Подмена вектора скорости для десинка
+        root.AssemblyLinearVelocity = Vector3.new(0, 10000000, 0)
         
         RunService.RenderStepped:Wait()
-        root.AssemblyLinearVelocity = oldVel
+        -- Возвращаем исходную скорость игрока для плавной ходьбы
+        root.AssemblyLinearVelocity = originalVelocity
     end
 end)

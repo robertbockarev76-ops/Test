@@ -1,89 +1,87 @@
 -- ========================================================
--- Ultra Touch Fling (Zero Self-Knockback & CFrame Lock)
+-- Advanced Name ESP for Roblox (Delta Executor Mobile)
 -- Author: robertbockarev76-ops
--- Platform: Mobile (Delta Executor)
+-- Platform: Mobile (Android / iOS)
 -- ========================================================
 
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
-local FlingEnabled = false
 
--- Очистка старого интерфейса
-if CoreGui:FindFirstChild("DeltaTouchFling_Mobile") then
-    CoreGui.DeltaTouchFling_Mobile:Destroy()
+-- Удаление старого интерфейса при перезапуске
+if CoreGui:FindFirstChild("RobloxNameESP") then
+    CoreGui.RobloxNameESP:Destroy()
 end
 
--- GUI Setup
-local ScreenGui = Instance.new("ScreenGui")
-local ToggleButton = Instance.new("TextButton")
-local UICorner = Instance.new("UICorner")
+local ESPFolder = Instance.new("Folder")
+ESPFolder.Name = "RobloxNameESP"
+ESPFolder.Parent = CoreGui
 
-ScreenGui.Name = "DeltaTouchFling_Mobile"
-ScreenGui.Parent = CoreGui
-ScreenGui.ResetOnSpawn = false
-
-ToggleButton.Name = "FlingToggle"
-ToggleButton.Parent = ScreenGui
-ToggleButton.Size = UDim2.new(0, 100, 0, 45)
-ToggleButton.Position = UDim2.new(0.15, 0, 0.15, 0)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(230, 50, 50)
-ToggleButton.Text = "FLING: OFF"
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.TextSize = 13
-ToggleButton.Font = Enum.Font.SourceSansBold
-ToggleButton.Active = true
-ToggleButton.Draggable = true
-
-UICorner.CornerRadius = UDim.new(0, 8)
-UICorner.Parent = ToggleButton
-
--- Toggle Logic
-ToggleButton.MouseButton1Click:Connect(function()
-    FlingEnabled = not FlingEnabled
-    if FlingEnabled then
-        ToggleButton.Text = "FLING: ON"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 210, 50)
-    else
-        ToggleButton.Text = "FLING: OFF"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(230, 50, 50)
-    end
-end)
-
--- Noclip Anti-Collision
-RunService.Stepped:Connect(function()
-    if not FlingEnabled then return end
-    local char = LocalPlayer.Character
-    if char then
-        for _, part in ipairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
+local function createESP(player)
+    if player == LocalPlayer then return end
+    
+    local function applyTag(character)
+        local head = character:WaitForChild("Head", 5)
+        if not head then return end
+        
+        if head:FindFirstChild("PlayerESP_Tag") then
+            head.PlayerESP_Tag:Destroy()
         end
+        
+        -- Создание плавающей плашки сквозь стены
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "PlayerESP_Tag"
+        billboard.Adornee = head
+        billboard.Size = UDim2.new(0, 200, 0, 40)
+        billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Parent = head
+        
+        local label = Instance.new("TextLabel")
+        label.Parent = billboard
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.TextColor3 = Color3.fromRGB(0, 255, 127) -- Неоново-зеленый
+        label.TextSize = 14
+        label.Font = Enum.Font.SourceSansBold
+        label.TextStrokeTransparency = 0 -- Черная обводка
+        label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        
+        -- Обновление расстояния в реальном времени
+        local connection
+        connection = RunService.RenderStepped:Connect(function()
+            if not character or not character:Parent() or not head:Parent() then
+                connection:Disconnect()
+                return
+            end
+            
+            local myChar = LocalPlayer.Character
+            local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            local targetRoot = character:FindFirstChild("HumanoidRootPart")
+            
+            if myRoot and targetRoot then
+                local distance = math.floor((myRoot.Position - targetRoot.Position).Magnitude)
+                label.Text = player.DisplayName .. " (@" .. player.Name .. ") [" .. distance .. "m]"
+            else
+                label.Text = player.DisplayName .. " (@" .. player.Name .. ")"
+            end
+        end)
     end
-end)
+    
+    if player.Character then
+        task.spawn(function()
+            applyTag(player.Character)
+        end)
+    end
+    
+    player.CharacterAdded:Connect(applyTag)
+end
 
--- Physics & Position Locking Engine
-RunService.Heartbeat:Connect(function()
-    if not FlingEnabled then return end
-    
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-    
-    if root and humanoid and humanoid.Health > 0 then
-        local lastCFrame = root.CFrame
-        local lastVel = root.AssemblyLinearVelocity
-        
-        -- Мощнейший импульс вращения
-        root.AssemblyAngularVelocity = Vector3.new(0, 9999999, 0)
-        root.AssemblyLinearVelocity = Vector3.new(9999999, 9999999, 9999999)
-        
-        RunService.RenderStepped:Wait()
-        -- Зажимаем координаты, чтобы тебя не смещало от отдачи
-        root.CFrame = lastCFrame
-        root.AssemblyLinearVelocity = lastVel
-    end
-end)
+-- Подключение игроков
+for _, player in ipairs(Players:GetPlayers()) do
+    createESP(player)
+end
+
+Players.PlayerAdded:Connect(createESP)

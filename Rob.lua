@@ -1,5 +1,5 @@
 -- ========================================================
--- Advanced Touch Fling (Zero Self-Knockback Version)
+-- Ultra Touch Fling (Zero Self-Knockback & CFrame Lock)
 -- Author: robertbockarev76-ops
 -- Platform: Mobile (Delta Executor)
 -- ========================================================
@@ -11,14 +11,12 @@ local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local FlingEnabled = false
 
--- Защита от дублирования интерфейса
+-- Очистка старого интерфейса
 if CoreGui:FindFirstChild("DeltaTouchFling_Mobile") then
     CoreGui.DeltaTouchFling_Mobile:Destroy()
 end
 
--- --------------------------------------------------------
 -- GUI Setup
--- --------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
 local ToggleButton = Instance.new("TextButton")
 local UICorner = Instance.new("UICorner")
@@ -42,7 +40,7 @@ ToggleButton.Draggable = true
 UICorner.CornerRadius = UDim.new(0, 8)
 UICorner.Parent = ToggleButton
 
--- Переключение состояния
+-- Toggle Logic
 ToggleButton.MouseButton1Click:Connect(function()
     FlingEnabled = not FlingEnabled
     if FlingEnabled then
@@ -54,16 +52,12 @@ ToggleButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- --------------------------------------------------------
--- Physics Core (Anti-Self-Fling + Desync)
--- --------------------------------------------------------
+-- Noclip Anti-Collision
 RunService.Stepped:Connect(function()
     if not FlingEnabled then return end
-    
-    local character = LocalPlayer.Character
-    if character then
-        -- Полный Noclip своего персонажа, чтобы не получать отдачу
-        for _, part in ipairs(character:GetChildren()) do
+    local char = LocalPlayer.Character
+    if char then
+        for _, part in ipairs(char:GetDescendants()) do
             if part:IsA("BasePart") then
                 part.CanCollide = false
             end
@@ -71,24 +65,25 @@ RunService.Stepped:Connect(function()
     end
 end)
 
+-- Physics & Position Locking Engine
 RunService.Heartbeat:Connect(function()
     if not FlingEnabled then return end
     
-    local character = LocalPlayer.Character
-    local root = character and character:FindFirstChild("HumanoidRootPart")
-    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
     
     if root and humanoid and humanoid.Health > 0 then
-        local originalVelocity = root.AssemblyLinearVelocity
+        local lastCFrame = root.CFrame
+        local lastVel = root.AssemblyLinearVelocity
         
-        -- Безумное вращение для выталкивания чужих персонажей
-        root.AssemblyAngularVelocity = Vector3.new(0, 10000000, 0)
-        
-        -- Подмена вектора скорости для десинка
-        root.AssemblyLinearVelocity = Vector3.new(0, 10000000, 0)
+        -- Мощнейший импульс вращения
+        root.AssemblyAngularVelocity = Vector3.new(0, 9999999, 0)
+        root.AssemblyLinearVelocity = Vector3.new(9999999, 9999999, 9999999)
         
         RunService.RenderStepped:Wait()
-        -- Возвращаем исходную скорость игрока для плавной ходьбы
-        root.AssemblyLinearVelocity = originalVelocity
+        -- Зажимаем координаты, чтобы тебя не смещало от отдачи
+        root.CFrame = lastCFrame
+        root.AssemblyLinearVelocity = lastVel
     end
 end)

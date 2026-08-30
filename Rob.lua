@@ -1,6 +1,7 @@
 -- ========================================================
 -- Touch Fling Script for Roblox (Delta Executor Mobile)
--- Target Platform: Mobile (Android / iOS)
+-- Author: robertbockarev76-ops
+-- Repository: https://github.com/robertbockarev76-ops/Test
 -- ========================================================
 
 local Players = game:GetService("Players")
@@ -9,6 +10,11 @@ local CoreGui = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
 local FlingEnabled = false
+
+-- Удаляем старое GUI, если скрипт перезапускают
+if CoreGui:FindFirstChild("DeltaTouchFling_Mobile") then
+    CoreGui.DeltaTouchFling_Mobile:Destroy()
+end
 
 -- --------------------------------------------------------
 -- Mobile GUI Setup
@@ -51,18 +57,21 @@ ToggleButton.MouseButton1Click:Connect(function()
 end)
 
 -- --------------------------------------------------------
--- Fling Physics Loop (Updated Assembly Velocity)
+-- Fling Physics Loop
 -- --------------------------------------------------------
 RunService.Heartbeat:Connect(function()
     if not FlingEnabled then return end
     
     local character = LocalPlayer.Character
-    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if not character then return end
     
-    if root then
+    local root = character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    
+    if root and humanoid and humanoid.Health > 0 then
         local oldVel = root.AssemblyLinearVelocity
         
-        -- Используем актуальные методы физического разгона Roblox
+        -- Максимальный разгон физики для отбрасывания игроков
         root.AssemblyAngularVelocity = Vector3.new(0, 999999, 0)
         root.AssemblyLinearVelocity = Vector3.new(oldVel.X, 9999, oldVel.Z)
         
